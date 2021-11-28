@@ -57,6 +57,8 @@ final class Main {
 	static final String dataFile = workingDir + "100K.nt";
 	static  Map<Integer,List<Map<Integer, List<Integer>>>> posCopy = new HashMap<>();
 	static Map<Integer,List<Map<Integer, List<Integer>>>> opsCopy = new HashMap<>();
+	static Map<Integer,List<Map<Integer, List<Integer>>>> spoCopy = new HashMap<>();
+	static Map<Integer,List<Map<Integer, List<Integer>>>> sopCopy = new HashMap<>();
 	static Map<String, Integer> mapCopy = new HashMap<>();
 
 	// ========================================================================
@@ -66,14 +68,11 @@ final class Main {
 	 */
 	public static void processAQuery(ParsedQuery query ) {
 
+		final Set<Integer> setToReturn = new HashSet<>();
+		final Set<Integer> set1 = new HashSet<>();
 		List<StatementPattern> patterns = StatementPatternCollector.process(query.getTupleExpr());
-
-		System.out.println("first pattern : " + patterns.get(0));
-
-
-
-		int [] p = new int[10];
-		int [] o= new int[10];
+		int [] firstTripletKey = new int[10];
+		int [] secondTripletKey= new int[10];
 		List<Integer> results = new ArrayList<>();
 		List<Integer> list1 = new ArrayList<>();
 		List<Integer> list2 = new ArrayList<>();
@@ -82,116 +81,25 @@ final class Main {
 
 		for(int i =0;i<patterns.toArray().length;i++)
 		{
-			System.out.println("name of the first pattern : " + patterns.get(i).getPredicateVar().getValue());
-			System.out.println("object of the first pattern : " + patterns.get(i).getObjectVar().getValue());
-			p[i] = mapCopy.get(patterns.get(i).getPredicateVar().getValue().toString());
-			 o[i] = mapCopy.get(patterns.get(i).getObjectVar().getValue().toString());
 			AtomicInteger in = new AtomicInteger();
 			in.set(i);
 
-
-
-			posCopy.get(p[i]).forEach(m-> {
-				if (m.get(o[in.get()]) != null) {
-					if(patterns.toArray().length>1) {
-						if (in.get() == 0){
-							list1.addAll(m.get(o[in.get()]));
-							System.out.println("list1 get()==0");}
-						else
-						{
-							if (patterns.toArray().length<3)
-							results.addAll(m.get(o[in.get()]));
-						}
-
-					} if(patterns.toArray().length>2)
-					{
-						if (in.get() == 1){
-							list2.addAll(m.get(o[in.get()]));
-							}
-						else
-						{
-							if(in.get()!=0 && patterns.toArray().length<4){
-
-							results.addAll(m.get(o[in.get()]).stream().distinct().collect(Collectors.toList()));}
-						}
-
-					}
-					if(patterns.toArray().length>3)
-					{
-						if (in.get() == 2){
-							list3.addAll(m.get(o[in.get()]));
-							}
-						else
-						{
-							if(in.get()==3){
-
-							results.addAll(m.get(o[in.get()]).stream().distinct().collect(Collectors.toList()));}
-						}
-
-					}
-
-
-					if(patterns.toArray().length==1)
-						results.addAll(m.get(o[in.get()]));
-
-				}
-
-			});
-			if(patterns.toArray().length>1)
-			if(i==0)
-			{
-				List<Integer> list = list1.stream().distinct().collect(Collectors.toList());
-
-				results.addAll(list);
+			if(patterns.get(i).getPredicateVar().getValue()==null) {
+				firstTripletKey[i] = mapCopy.get(patterns.get(i).getPredicateVar().getValue().toString());
+				secondTripletKey[i] = mapCopy.get(patterns.get(i).getObjectVar().getValue().toString());
+				computeQueryResult(patterns, firstTripletKey[i], secondTripletKey[i], results, list1, list2, list3, i, in, sopCopy);
 			}
-			if(patterns.toArray().length>2)
-				if(i==1)
-				{
-					List<Integer> list = list2.stream().distinct().collect(Collectors.toList());
-
-					results.addAll(list);
-		final Set<Integer> setToReturn = new HashSet<>();
-		final Set<Integer> set1 = new HashSet<>();
-
-		for (Integer yourInt : results)
-		{
-			if (!set1.add(yourInt))
-			{
-				setToReturn.add(yourInt);
+			else if(patterns.get(i).getObjectVar().getValue()==null){
+				firstTripletKey[i] = mapCopy.get(patterns.get(i).getPredicateVar().getValue().toString());
+				secondTripletKey[i] = mapCopy.get(patterns.get(i).getObjectVar().getValue().toString());
+				computeQueryResult(patterns, firstTripletKey[i], secondTripletKey[i], results, list1, list2, list3, i, in, spoCopy);
+			}
+			else {
+				firstTripletKey[i] = mapCopy.get(patterns.get(i).getPredicateVar().getValue().toString());
+				secondTripletKey[i] = mapCopy.get(patterns.get(i).getObjectVar().getValue().toString());
+				computeQueryResult(patterns, firstTripletKey[i], secondTripletKey[i], results, list1, list2, list3, i, in, posCopy);
 			}
 		}
-		results.clear();
-		results.addAll(setToReturn);
-		results.forEach((k) -> System.out.println(k));
-
-
-				}
-
-			if(patterns.toArray().length>3)
-				if(i==2)
-				{
-					List<Integer> list = list3.stream().distinct().collect(Collectors.toList());
-
-					results.addAll(list);
-		final Set<Integer> setToReturn = new HashSet<>();
-		final Set<Integer> set1 = new HashSet<>();
-
-		for (Integer yourInt : results)
-		{
-			if (!set1.add(yourInt))
-			{
-				setToReturn.add(yourInt);
-			}
-		}
-		results.clear();
-		results.addAll(setToReturn);
-		results.forEach((k) -> System.out.println(k));
-
-
-				}
-		}
-		final Set<Integer> setToReturn = new HashSet<>();
-		final Set<Integer> set1 = new HashSet<>();
 
 		for (Integer yourInt : results)
 		{
@@ -204,8 +112,6 @@ final class Main {
 
 		setToReturn.forEach(System.out::println);
 
-
-		//posCopy.get(p).forEach(m-> System.out.println("dony " + m.get(o)));
 		System.out.println("variables to project : ");
 
 		// Utilisation d'une classe anonyme
@@ -216,6 +122,88 @@ final class Main {
 			}
 		});
 	}
+
+	private static void computeQueryResult(List<StatementPattern> patterns, int firstKey, int secondKey, List<Integer> results, List<Integer> list1, List<Integer> list2, List<Integer> list3, int i, AtomicInteger in, Map<Integer, List<Map<Integer, List<Integer>>>> triplet) {
+		triplet.get(firstKey).forEach(m -> {
+			if (m.get(secondKey) != null) {
+				if (patterns.toArray().length > 1) {
+					if (in.get() == 0) {
+						list1.addAll(m.get(secondKey));
+					} else {
+						if (patterns.toArray().length < 3)
+							results.addAll(m.get(secondKey));
+					}
+
+				}
+				if (patterns.toArray().length > 2) {
+					if (in.get() == 1) {
+						list2.addAll(m.get(secondKey));
+					} else {
+						if (in.get() != 0 && patterns.toArray().length < 4) {
+
+							results.addAll(m.get(secondKey).stream().distinct().collect(Collectors.toList()));
+						}
+					}
+
+				}
+				if (patterns.toArray().length > 3) {
+					if (in.get() == 2) {
+						list3.addAll(m.get(secondKey));
+					} else {
+						if (in.get() == 3) {
+							results.addAll(m.get(secondKey).stream().distinct().collect(Collectors.toList()));
+						}
+					}
+				}
+
+				if (patterns.toArray().length == 1)
+					results.addAll(m.get(secondKey));
+
+			}
+
+		});
+		if (patterns.toArray().length > 1)
+			if (i == 0) {
+				List<Integer> list = list1.stream().distinct().collect(Collectors.toList());
+
+				results.addAll(list);
+			}
+		if (patterns.toArray().length > 2)
+			if (i == 1) {
+				List<Integer> list = list2.stream().distinct().collect(Collectors.toList());
+
+				results.addAll(list);
+				final Set<Integer> setToReturn = new HashSet<>();
+				final Set<Integer> set1 = new HashSet<>();
+
+				for (Integer yourInt : results) {
+					if (!set1.add(yourInt)) {
+						setToReturn.add(yourInt);
+					}
+				}
+				results.clear();
+				results.addAll(setToReturn);
+			}
+
+		if (patterns.toArray().length > 3)
+			if (i == 2) {
+				List<Integer> list = list3.stream().distinct().collect(Collectors.toList());
+
+				results.addAll(list);
+				final Set<Integer> setToReturn = new HashSet<>();
+				final Set<Integer> set1 = new HashSet<>();
+
+				for (Integer yourInt : results) {
+					if (!set1.add(yourInt)) {
+						setToReturn.add(yourInt);
+					}
+				}
+				results.clear();
+				results.addAll(setToReturn);
+				//results.forEach((k) -> System.out.println(k));
+			}
+	}
+
 
 	/**
 	 * Entrée du programme
@@ -273,54 +261,19 @@ final class Main {
 		try (Reader dataReader = new FileReader(dataFile)) {
 			// On va parser des données au format ntriples
 			RDFParser rdfParser = Rio.createParser(RDFFormat.NTRIPLES);
-
 			// On utilise notre implémentation de handler
-
 			rdfParser.setRDFHandler(mainRDFHandler);
-
-
-
-
 			// Parsing et traitement de chaque triple par le handler
 			rdfParser.parse(dataReader, baseURI);
 
-
 		}
-
+/*
 		mainRDFHandler.map.forEach((k,v)-> {
 		System.out.println("cle " + k + " value " + v);
 		});
+*/
 
-
-mainRDFHandler.sop.forEach((s,list)->{
-	list.forEach(((l)->{
-		l.forEach((o,listpre) -> {
-			listpre.forEach(p->{
-				System.out.println("SOP " + "<" + s + "," + o + "," + p + ">");
-			});
-
-		});
-	}));
-});
-		mainRDFHandler.spo.forEach((s,list)->{
-			list.forEach(((l)->{
-				l.forEach((p,oblist)-> {
-					oblist.forEach((o) -> {
-						System.out.println("SPO " + "<" + s + "," + p + "," + o + ">");
-					});
-				});
-			}));
-		});
-		mainRDFHandler.pso.forEach((p,list)->{
-			list.forEach(((l)->{
-				l.forEach((s,listobject)-> {
-					listobject.forEach((o)-> {
-						System.out.println("PSO " + "<" + p + "," + s + "," + o + ">");
-					});
-				});
-			}));
-		});
-
+/*
 		mainRDFHandler.pos.forEach((p,listos)->{
 			listos.forEach(((l)->{
 				l.forEach((o,listsub)->{
@@ -331,34 +284,13 @@ mainRDFHandler.sop.forEach((s,list)->{
 
 			}));
 		});
-
-		mainRDFHandler.ops.forEach((o,listps)->{
-			listps.forEach((l->{
-				l.forEach((p,listsub)->{
-					listsub.forEach(s->{
-						System.out.println("OPS " +"<" +  o  + "," +p + "," + s+">");
-					});
-						});
-
-			}));
-		});
-
-		mainRDFHandler.osp.forEach((o,sp)->{
-			sp.forEach(((l)->{
-l.forEach((s,listpre)->{
-	listpre.forEach(p->{
-		System.out.println("OSP " +"<" +  o  + "," +s + "," + p+">");
-	});
-});
-
-			}));
-		});
-
+*/
 
 mapCopy.putAll(mainRDFHandler.map);
 opsCopy.putAll(mainRDFHandler.ops);
 posCopy.putAll(mainRDFHandler.pos);
-
+spoCopy.putAll(mainRDFHandler.spo);
+sopCopy.putAll(mainRDFHandler.sop);
 
 
 	}
