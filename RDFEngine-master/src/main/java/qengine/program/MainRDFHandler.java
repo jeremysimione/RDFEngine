@@ -20,7 +20,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * </p>
  */
 public final class MainRDFHandler extends AbstractRDFHandler {
+int nombreLigne = 0;
 	int num = 0;
+	long timeDico = 0;
+	long timeTriplet =0;
 Map<String, Integer> map = new HashMap<>();
 Map<Integer,List<Map<Integer, List<Integer>>>> sop = new HashMap<>();
 Map<Integer,List<Map<Integer,List<Integer>>>> spo = new HashMap<>();
@@ -32,6 +35,8 @@ Map<Integer,List<Map<Integer, List<Integer>>>> osp = new HashMap<>();
 	@Override
 	public void handleStatement(Statement st) {
 		System.out.println("\n" + st.getSubject() + "\t " + st.getPredicate() + "\t " + st.getObject());
+		nombreLigne++;
+long startTime = System.currentTimeMillis();
 
 		if (!map.containsKey(st.getSubject().stringValue())) {
 			num++;
@@ -45,8 +50,10 @@ Map<Integer,List<Map<Integer, List<Integer>>>> osp = new HashMap<>();
 			num++;
 			map.put(st.getObject().stringValue(), num);
 		}
+long endTime = System.currentTimeMillis();
+timeDico +=endTime - startTime;
 
-
+long startTimeTriplet = System.currentTimeMillis();
 		//SOP
 		if (!sop.containsKey(map.get(st.getSubject().stringValue()))) {
 			List<Map<Integer, List<Integer>>> op = new ArrayList<>();
@@ -216,6 +223,8 @@ Map<Integer,List<Map<Integer, List<Integer>>>> osp = new HashMap<>();
 								ops.get(map.get(st.getObject().stringValue())).add(ps);
 
 							}
+							long endTimeTriplet = System.currentTimeMillis();
+							timeTriplet += endTimeTriplet - startTimeTriplet;
 
 
 

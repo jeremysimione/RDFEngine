@@ -1,17 +1,16 @@
 package qengine.program;
 
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.Reader;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.opencsv.CSVReader;
 import org.eclipse.rdf4j.query.algebra.Projection;
 import org.eclipse.rdf4j.query.algebra.StatementPattern;
 import org.eclipse.rdf4j.query.algebra.helpers.AbstractQueryModelVisitor;
@@ -40,7 +39,7 @@ import org.eclipse.rdf4j.rio.Rio;
  */
 final class Main {
 	static final String baseURI = null;
-
+	static List<String> data = new ArrayList<String>();
 	/**
 	 * Votre répertoire de travail où vont se trouver les fichiers à lire
 	 */
@@ -55,18 +54,36 @@ final class Main {
 	 * Fichier contenant des données rdf
 	 */
 	static final String dataFile = workingDir + "100K.nt";
+
 	static  Map<Integer,List<Map<Integer, List<Integer>>>> posCopy = new HashMap<>();
 	static Map<Integer,List<Map<Integer, List<Integer>>>> opsCopy = new HashMap<>();
 	static Map<Integer,List<Map<Integer, List<Integer>>>> spoCopy = new HashMap<>();
 	static Map<Integer,List<Map<Integer, List<Integer>>>> sopCopy = new HashMap<>();
 	static Map<String, Integer> mapCopy = new HashMap<>();
+	static int nbrequetes =0;
+	static long timeToParse = 0;
+	static long timeToProcessAllQueries = 0;
+	static  int nbTriplets = 0;
+	static long timeDico = 0;
+	static long timeTriplet = 0;
+	static long totalTime=0;
+	static int nbLignes=0;
+	static long totalWorkloadTime = 0;
+	public static String getDataFile() {
+		return dataFile;
+	}
 
 	// ========================================================================
+	public static String convertToCSV(String[] data) {
+		return Stream.of(data)
+				.collect(Collectors.joining(","));
+	}
+
 
 	/**
 	 * Méthode utilisée ici lors du parsing de requête sparql pour agir sur l'objet obtenu.
 	 */
-	public static void processAQuery(ParsedQuery query ) {
+	public static void processAQuery(ParsedQuery query ) throws IOException {
 
 		final Set<Integer> setToReturn = new HashSet<>();
 		final Set<Integer> set1 = new HashSet<>();
@@ -78,7 +95,6 @@ final class Main {
 		List<Integer> list2 = new ArrayList<>();
 		List<Integer> list3 = new ArrayList<>();
 
-
 		for(int i =0;i<patterns.toArray().length;i++)
 		{
 			AtomicInteger in = new AtomicInteger();
@@ -88,18 +104,27 @@ final class Main {
 				firstTripletKey[i] = mapCopy.get(patterns.get(i).getPredicateVar().getValue().toString());
 				secondTripletKey[i] = mapCopy.get(patterns.get(i).getObjectVar().getValue().toString());
 				computeQueryResult(patterns, firstTripletKey[i], secondTripletKey[i], results, list1, list2, list3, i, in, sopCopy);
+
 			}
 			else if(patterns.get(i).getObjectVar().getValue()==null){
 				firstTripletKey[i] = mapCopy.get(patterns.get(i).getPredicateVar().getValue().toString());
 				secondTripletKey[i] = mapCopy.get(patterns.get(i).getObjectVar().getValue().toString());
 				computeQueryResult(patterns, firstTripletKey[i], secondTripletKey[i], results, list1, list2, list3, i, in, spoCopy);
+
 			}
 			else {
 				firstTripletKey[i] = mapCopy.get(patterns.get(i).getPredicateVar().getValue().toString());
 				secondTripletKey[i] = mapCopy.get(patterns.get(i).getObjectVar().getValue().toString());
+				//Calcul temps requete
 				computeQueryResult(patterns, firstTripletKey[i], secondTripletKey[i], results, list1, list2, list3, i, in, posCopy);
+
+
+
+
 			}
 		}
+
+
 
 		for (Integer yourInt : results)
 		{
@@ -111,7 +136,6 @@ final class Main {
 		System.out.println("la liste " + setToReturn.size());
 
 		setToReturn.forEach(System.out::println);
-
 		System.out.println("variables to project : ");
 
 		// Utilisation d'une classe anonyme
@@ -133,7 +157,6 @@ final class Main {
 						if (patterns.toArray().length < 3)
 							results.addAll(m.get(secondKey));
 					}
-
 				}
 				if (patterns.toArray().length > 2) {
 					if (in.get() == 1) {
@@ -144,7 +167,6 @@ final class Main {
 							results.addAll(m.get(secondKey).stream().distinct().collect(Collectors.toList()));
 						}
 					}
-
 				}
 				if (patterns.toArray().length > 3) {
 					if (in.get() == 2) {
@@ -155,10 +177,8 @@ final class Main {
 						}
 					}
 				}
-
 				if (patterns.toArray().length == 1)
 					results.addAll(m.get(secondKey));
-
 			}
 
 		});
@@ -171,7 +191,6 @@ final class Main {
 		if (patterns.toArray().length > 2)
 			if (i == 1) {
 				List<Integer> list = list2.stream().distinct().collect(Collectors.toList());
-
 				results.addAll(list);
 				final Set<Integer> setToReturn = new HashSet<>();
 				final Set<Integer> set1 = new HashSet<>();
@@ -188,7 +207,6 @@ final class Main {
 		if (patterns.toArray().length > 3)
 			if (i == 2) {
 				List<Integer> list = list3.stream().distinct().collect(Collectors.toList());
-
 				results.addAll(list);
 				final Set<Integer> setToReturn = new HashSet<>();
 				final Set<Integer> set1 = new HashSet<>();
@@ -208,17 +226,65 @@ final class Main {
 	/**
 	 * Entrée du programme
 	 */
-	public static void main(String[] args) throws Exception {
-		parseData();
-		parseQueries();
+	public static void export(String fileName) throws Exception {
+		String path = "data/" + fileName + ".csv";
+
+		FileWriter fw = null;
+
+		try {
+			fw = new FileWriter(path);
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		try {
+			// Pour une meilleur lisibilité du csv on a choisie de mettre les informations
+			// sur deux colonnes plutot que de les mettres sur 2 lignes
+			fw.write("nom_fichier,");
+			fw.write("nom_dossier_requetes,");
+			fw.write("nb_triplets,");
+			fw.write("nb_requetes,");
+			fw.write("temps_lecture_data,");
+			fw.write("temps_lecture_req,");
+			fw.write("temps_creation_dico,");
+			fw.write("nb_index,");
+			fw.write("temps_creation_index,");
+			fw.write("temps_exec_worload,");
+			fw.write("temps_total\n");
+			fw.write(getDataFile() + "," + getWorkingDir() + "," + nbLignes  + "," + nbrequetes + "," + timeToParse +"," + timeToProcessAllQueries
+					+ "," + timeDico + "," + nbTriplets + "," + timeTriplet + ","  + totalWorkloadTime +"," +totalTime );
+			fw.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
 	}
 
-	// ========================================================================
+
+	public static void main(String[] args) throws Exception {
+		long startWork = System.currentTimeMillis();
+		long startTime = System.currentTimeMillis();
+		parseData();
+		long endTime = System.currentTimeMillis();
+		timeToParse = endTime - startTime;
+		startTime = System.currentTimeMillis();
+		parseQueries();
+		endTime = System.currentTimeMillis();
+		timeToProcessAllQueries = endTime - startTime;
+		long endWork = System.currentTimeMillis();
+		totalTime = endWork - startWork;
+		export("resultat");
+	}
+
+	private static String getWorkingDir() {
+		return workingDir;
+	}
+
 
 	/**
 	 * Traite chaque requête lue dans {@link #queryFile} avec {@link #processAQuery(ParsedQuery)}.
 	 */
 	private static void parseQueries() throws FileNotFoundException, IOException {
+
 		/**
 		 * Try-with-resources
 		 * 
@@ -244,19 +310,28 @@ final class Main {
 
 				if (line.trim().endsWith("}")) {
 					ParsedQuery query = sparqlParser.parseQuery(queryString.toString(), baseURI);
+					//temps d'evaluation d'une requete
+					long start = System.currentTimeMillis();
+					long stratTime = System.currentTimeMillis();
 					processAQuery(query); // Traitement de la requête, à adapter/réécrire pour votre programme
-
+					long endTime = System.currentTimeMillis();
+					long timeTaken = (endTime-start);
+					totalWorkloadTime += timeTaken;
+					nbrequetes++;
 					queryString.setLength(0); // Reset le buffer de la requête en chaine vide
 				}
 			}
 		}
 	}
 
+	private static void setTimeToProcessAllQueries(long l) {
+	}
+
 	/**
 	 * Traite chaque triple lu dans {@link #dataFile} avec {@link MainRDFHandler}.
 	 */
 	private static void parseData() throws FileNotFoundException, IOException {
-
+		long startTime = System.currentTimeMillis();
 		MainRDFHandler mainRDFHandler =	new MainRDFHandler();
 		try (Reader dataReader = new FileReader(dataFile)) {
 			// On va parser des données au format ntriples
@@ -291,7 +366,9 @@ opsCopy.putAll(mainRDFHandler.ops);
 posCopy.putAll(mainRDFHandler.pos);
 spoCopy.putAll(mainRDFHandler.spo);
 sopCopy.putAll(mainRDFHandler.sop);
-
-
+nbTriplets = spoCopy.size();
+nbLignes = mainRDFHandler.nombreLigne;
+timeDico = mainRDFHandler.timeDico;
+timeTriplet = mainRDFHandler.timeTriplet;
 	}
 }
