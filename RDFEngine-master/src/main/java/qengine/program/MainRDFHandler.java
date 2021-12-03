@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Le RDFHandler intervient lors du parsing de données et permet d'appliquer un traitement pour chaque élément lu par le parseur.
- * 
+ *
  * <p>
  * Ce qui servira surtout dans le programme est la méthode {@link #handleStatement(Statement)} qui va permettre de traiter chaque triple lu.
  * </p>
@@ -20,24 +20,23 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * </p>
  */
 public final class MainRDFHandler extends AbstractRDFHandler {
-int nombreLigne = 0;
+	int nombreLigne = 0;
 	int num = 0;
 	long timeDico = 0;
 	long timeTriplet =0;
-Map<String, Integer> map = new HashMap<>();
-Map<Integer,List<Map<Integer, List<Integer>>>> sop = new HashMap<>();
-Map<Integer,List<Map<Integer,List<Integer>>>> spo = new HashMap<>();
-Map<Integer,List<Map<Integer, List<Integer>>>> pso = new HashMap<>();
-Map<Integer,List<Map<Integer, List<Integer>>>> pos = new HashMap<>();
-Map<Integer,List<Map<Integer, List<Integer>>>> ops = new HashMap<>();
-Map<Integer,List<Map<Integer, List<Integer>>>> osp = new HashMap<>();
+	Map<String, Integer> map = new HashMap<>();
+	Map<Integer,List<Map<Integer, List<Integer>>>> sop = new HashMap<>();
+	Map<Integer,List<Map<Integer,List<Integer>>>> spo = new HashMap<>();
+	Map<Integer,List<Map<Integer, List<Integer>>>> pso = new HashMap<>();
+	Map<Integer,List<Map<Integer, List<Integer>>>> pos = new HashMap<>();
+	Map<Integer,List<Map<Integer, List<Integer>>>> ops = new HashMap<>();
+	Map<Integer,List<Map<Integer, List<Integer>>>> osp = new HashMap<>();
 
 	@Override
 	public void handleStatement(Statement st) {
-		System.out.println("\n" + st.getSubject() + "\t " + st.getPredicate() + "\t " + st.getObject());
+		//	System.out.println("\n" + st.getSubject() + "\t " + st.getPredicate() + "\t " + st.getObject());
 		nombreLigne++;
-long startTime = System.currentTimeMillis();
-
+		long startTime = System.currentTimeMillis();
 		if (!map.containsKey(st.getSubject().stringValue())) {
 			num++;
 			map.put(st.getSubject().stringValue(), num);
@@ -50,10 +49,10 @@ long startTime = System.currentTimeMillis();
 			num++;
 			map.put(st.getObject().stringValue(), num);
 		}
-long endTime = System.currentTimeMillis();
-timeDico +=endTime - startTime;
+		long endTime = System.currentTimeMillis();
+		timeDico +=endTime - startTime;
 
-long startTimeTriplet = System.currentTimeMillis();
+		long startTimeTriplet = System.currentTimeMillis();
 		//SOP
 		if (!sop.containsKey(map.get(st.getSubject().stringValue()))) {
 			List<Map<Integer, List<Integer>>> op = new ArrayList<>();
@@ -137,65 +136,65 @@ long startTimeTriplet = System.currentTimeMillis();
 
 
 
-						//POS
+		//POS
 		if(!pos.containsKey(map.get(st.getPredicate().stringValue())))
 		{
 			List<Map<Integer, List<Integer>>> os = new ArrayList<>();
 			pos.put(map.get(st.getPredicate().stringValue()), os);
 
 		}
-				AtomicBoolean boolpos = new AtomicBoolean(false);
-				if (pos.get(map.get(st.getPredicate().stringValue())).size() > 0) {
-					pos.get(map.get(st.getPredicate().stringValue())).forEach(m -> {
-						if (m.containsKey(map.get(st.getObject().stringValue()))) {
-							m.get(map.get(st.getObject().stringValue())).add(map.get(st.getSubject().stringValue()));
-							boolpos.set(true);
+		AtomicBoolean boolpos = new AtomicBoolean(false);
+		if (pos.get(map.get(st.getPredicate().stringValue())).size() > 0) {
+			pos.get(map.get(st.getPredicate().stringValue())).forEach(m -> {
+				if (m.containsKey(map.get(st.getObject().stringValue()))) {
+					m.get(map.get(st.getObject().stringValue())).add(map.get(st.getSubject().stringValue()));
+					boolpos.set(true);
 
-						}
-					});
 				}
-					if (!boolpos.get())
-					{
-						HashMap<Integer,List<Integer>> os = new HashMap<>();
-						List<Integer> list = new ArrayList<>();
-						list.add(map.get(st.getSubject().stringValue()));
-						os.put(map.get(st.getObject().stringValue()),list);
-						pos.get(map.get(st.getPredicate().stringValue())).add(os);
+			});
+		}
+		if (!boolpos.get())
+		{
+			HashMap<Integer,List<Integer>> os = new HashMap<>();
+			List<Integer> list = new ArrayList<>();
+			list.add(map.get(st.getSubject().stringValue()));
+			os.put(map.get(st.getObject().stringValue()),list);
+			pos.get(map.get(st.getPredicate().stringValue())).add(os);
 
-					}
+		}
 
 
 
 
 
-        //OSP
+		//OSP
 		if(!osp.containsKey(map.get(st.getObject().stringValue())))
 		{
 			List<Map<Integer, List<Integer>>> sp = new ArrayList<>();
 			osp.put(map.get(st.getObject().stringValue()), sp);
 		}
-					AtomicBoolean boolosp = new AtomicBoolean(false);
-					if (osp.get(map.get(st.getObject().stringValue())).size() > 0) {
-						osp.get(map.get(st.getObject().stringValue())).forEach(m -> {
-							if (m.containsKey(map.get(st.getSubject().stringValue()))) {
-								m.get(map.get(st.getSubject().stringValue())).add(map.get(st.getPredicate().stringValue()));
-								boolosp.set(true);
+		AtomicBoolean boolosp = new AtomicBoolean(false);
+		if (osp.get(map.get(st.getObject().stringValue())).size() > 0) {
+			osp.get(map.get(st.getObject().stringValue())).forEach(m -> {
+				if (m.containsKey(map.get(st.getSubject().stringValue()))) {
+					m.get(map.get(st.getSubject().stringValue())).add(map.get(st.getPredicate().stringValue()));
+					boolosp.set(true);
 
-							}
-						});
-					}
-			if (!boolosp.get()){
-				HashMap<Integer,List<Integer>> sp = new HashMap<>();
-				List<Integer> list =new ArrayList<>();
-				list.add(map.get(st.getPredicate().stringValue()));
-				sp.put(map.get(st.getSubject().stringValue()),list);
-				osp.get(map.get(st.getObject().stringValue())).add(sp);
+				}
+			});
+		}
+		if (!boolosp.get()){
+			HashMap<Integer,List<Integer>> sp = new HashMap<>();
+			List<Integer> list =new ArrayList<>();
+			list.add(map.get(st.getPredicate().stringValue()));
+			sp.put(map.get(st.getSubject().stringValue()),list);
+			osp.get(map.get(st.getObject().stringValue())).add(sp);
 
-			}
+		}
 
 
 
-						//OPS
+		//OPS
 		if(!ops.containsKey(map.get(st.getObject().stringValue())))
 		{
 			List<Map<Integer, List<Integer>>> ps = new ArrayList<>();
@@ -203,28 +202,28 @@ long startTimeTriplet = System.currentTimeMillis();
 		}
 
 
-						AtomicBoolean boolops = new AtomicBoolean(false);
-						if (ops.get(map.get(st.getObject().stringValue())).size() > 0) {
-							ops.get(map.get(st.getObject().stringValue())).forEach(m -> {
-								if (m.containsKey(map.get(st.getPredicate().stringValue()))) {
-									m.get(map.get(st.getPredicate().stringValue())).add(map.get(st.getSubject().stringValue()));
-									boolops.set(true);
+		AtomicBoolean boolops = new AtomicBoolean(false);
+		if (ops.get(map.get(st.getObject().stringValue())).size() > 0) {
+			ops.get(map.get(st.getObject().stringValue())).forEach(m -> {
+				if (m.containsKey(map.get(st.getPredicate().stringValue()))) {
+					m.get(map.get(st.getPredicate().stringValue())).add(map.get(st.getSubject().stringValue()));
+					boolops.set(true);
 
-								}
-							});
-						}
-							if (!boolops.get())
-							{
-								HashMap<Integer,List<Integer>> ps = new HashMap<>();
-								List<Integer> list = new ArrayList<>();
-								list.add(map.get(st.getSubject().stringValue()));
+				}
+			});
+		}
+		if (!boolops.get())
+		{
+			HashMap<Integer,List<Integer>> ps = new HashMap<>();
+			List<Integer> list = new ArrayList<>();
+			list.add(map.get(st.getSubject().stringValue()));
 
-								ps.put(map.get(st.getPredicate().stringValue()),list);
-								ops.get(map.get(st.getObject().stringValue())).add(ps);
+			ps.put(map.get(st.getPredicate().stringValue()),list);
+			ops.get(map.get(st.getObject().stringValue())).add(ps);
 
-							}
-							long endTimeTriplet = System.currentTimeMillis();
-							timeTriplet += endTimeTriplet - startTimeTriplet;
+		}
+		long endTimeTriplet = System.currentTimeMillis();
+		timeTriplet += endTimeTriplet - startTimeTriplet;
 
 
 

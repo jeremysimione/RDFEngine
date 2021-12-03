@@ -23,18 +23,18 @@ import org.eclipse.rdf4j.rio.Rio;
 
 /**
  * Programme simple lisant un fichier de requête et un fichier de données.
- * 
+ *
  * <p>
  * Les entrées sont données ici de manière statique,
  * à vous de programmer les entrées par passage d'arguments en ligne de commande comme demandé dans l'énoncé.
  * </p>
- * 
+ *
  * <p>
  * Le présent programme se contente de vous montrer la voie pour lire les triples et requêtes
  * depuis les fichiers ; ce sera à vous d'adapter/réécrire le code pour finalement utiliser les requêtes et interroger les données.
  * On ne s'attend pas forcémment à ce que vous gardiez la même structure de code, vous pouvez tout réécrire.
  * </p>
- * 
+ *
  * @author Olivier Rodriguez <olivier.rodriguez1@umontpellier.fr>
  */
 final class Main {
@@ -48,189 +48,167 @@ final class Main {
 	/**
 	 * Fichier contenant les requêtes sparql
 	 */
-	static final String queryFile = workingDir + "sample_query.queryset";
+	static final String queryFile = workingDir + "STAR_ALL_workload.queryset";
 
 	/**
 	 * Fichier contenant des données rdf
 	 */
 	static final String dataFile = workingDir + "100K.nt";
 
-	static  Map<Integer,List<Map<Integer, List<Integer>>>> posCopy = new HashMap<>();
-	static Map<Integer,List<Map<Integer, List<Integer>>>> opsCopy = new HashMap<>();
-	static Map<Integer,List<Map<Integer, List<Integer>>>> spoCopy = new HashMap<>();
-	static Map<Integer,List<Map<Integer, List<Integer>>>> sopCopy = new HashMap<>();
+	static Map<Integer, List<Map<Integer, List<Integer>>>> posCopy = new HashMap<>();
+	static Map<Integer, List<Map<Integer, List<Integer>>>> opsCopy = new HashMap<>();
+	static Map<Integer, List<Map<Integer, List<Integer>>>> spoCopy = new HashMap<>();
+	static Map<Integer, List<Map<Integer, List<Integer>>>> sopCopy = new HashMap<>();
 	static Map<String, Integer> mapCopy = new HashMap<>();
-	static int nbrequetes =0;
+	static int nbrequetes = 0;
 	static long timeToParse = 0;
 	static long timeToProcessAllQueries = 0;
-	static  int nbTriplets = 0;
+	static int nbTriplets = 0;
 	static long timeDico = 0;
 	static long timeTriplet = 0;
-	static long totalTime=0;
-	static int nbLignes=0;
+	static long totalTime = 0;
+	static int nbLignes = 0;
 	static long totalWorkloadTime = 0;
+	static int nbderequetesvides = 0;
+
 	public static String getDataFile() {
 		return dataFile;
 	}
 
-	// ========================================================================
-	public static String convertToCSV(String[] data) {
-		return Stream.of(data)
-				.collect(Collectors.joining(","));
-	}
-
-
-	/**
-	 * Méthode utilisée ici lors du parsing de requête sparql pour agir sur l'objet obtenu.
-	 */
-	public static void processAQuery(ParsedQuery query ) throws IOException {
-
-		final Set<Integer> setToReturn = new HashSet<>();
-		final Set<Integer> set1 = new HashSet<>();
+	public static void processAQuery(ParsedQuery query) throws IOException {
 		List<StatementPattern> patterns = StatementPatternCollector.process(query.getTupleExpr());
-		int [] firstTripletKey = new int[10];
-		int [] secondTripletKey= new int[10];
-		List<Integer> results = new ArrayList<>();
-		List<Integer> list1 = new ArrayList<>();
-		List<Integer> list2 = new ArrayList<>();
-		List<Integer> list3 = new ArrayList<>();
-
-		for(int i =0;i<patterns.toArray().length;i++)
-		{
-			AtomicInteger in = new AtomicInteger();
+		int[] firstTripletKey = new int[10];
+		int[] secondTripletKey = new int[10];
+		ArrayList<ArrayList<Integer>> mesListes = new ArrayList<ArrayList<Integer>>();
+		ArrayList<Integer> resultatsFinal = new ArrayList<>();
+		AtomicInteger in = new AtomicInteger();
+		for (int i = 0; i < patterns.toArray().length; i++) {
+			ArrayList<Integer> results = new ArrayList<>();
 			in.set(i);
+			if (patterns.get(i).getPredicateVar().getValue() == null) {
+				if (mapCopy.get(patterns.get(i).getSubjectVar().getValue().toString()) != null) {
+					firstTripletKey[i] = mapCopy.get(patterns.get(i).getObjectVar().getValue().toString());
+				}
+				if (mapCopy.get(patterns.get(i).getObjectVar().getValue().toString()) != null) {
+					secondTripletKey[i] = mapCopy.get(patterns.get(i).getObjectVar().getValue().toString());
+				}
+				sopCopy.get(firstTripletKey[i]).forEach(m -> {
+					if (m.get(secondTripletKey[in.get()]) != null) {
+						Set<Integer> uniqueValues = new HashSet<>();
+						uniqueValues.addAll(m.get(secondTripletKey[in.get()]));
+						results.addAll(uniqueValues);
+					}
+				});
+				mesListes.add(results);
 
-			if(patterns.get(i).getPredicateVar().getValue()==null) {
-				firstTripletKey[i] = mapCopy.get(patterns.get(i).getPredicateVar().getValue().toString());
-				secondTripletKey[i] = mapCopy.get(patterns.get(i).getObjectVar().getValue().toString());
-				computeQueryResult(patterns, firstTripletKey[i], secondTripletKey[i], results, list1, list2, list3, i, in, sopCopy);
-
+			} else if (patterns.get(i).getObjectVar().getValue() == null) {
+				if (mapCopy.get(patterns.get(i).getSubjectVar().getValue().toString()) != null) {
+					firstTripletKey[i] = mapCopy.get(patterns.get(i).getPredicateVar().getValue().toString());
+				}
+				if (mapCopy.get(patterns.get(i).getObjectVar().getValue().toString()) != null) {
+					secondTripletKey[i] = mapCopy.get(patterns.get(i).getObjectVar().getValue().toString());
+				}
+				spoCopy.get(firstTripletKey[i]).forEach(m -> {
+					if (m.get(secondTripletKey[in.get()]) != null) {
+						Set<Integer> uniqueValues = new HashSet<>();
+						uniqueValues.addAll(m.get(secondTripletKey[in.get()]));
+						results.addAll(uniqueValues);
+					}
+				});
+				mesListes.add(results);
+			} else {
+				if (mapCopy.get(patterns.get(i).getPredicateVar().getValue().toString()) != null) {
+					firstTripletKey[i] = mapCopy.get(patterns.get(i).getPredicateVar().getValue().toString());
+				} else {
+					nbderequetesvides++;
+					return;
+				}
+				if (mapCopy.get(patterns.get(i).getObjectVar().getValue().toString()) != null) {
+					secondTripletKey[i] = mapCopy.get(patterns.get(i).getObjectVar().getValue().toString());
+				} else {
+					nbderequetesvides++;
+					return;
+				}
+				posCopy.get(firstTripletKey[i]).forEach(m -> {
+					if (m.get(secondTripletKey[in.get()]) != null) {
+						Set<Integer> uniqueValues = new HashSet<>();
+						uniqueValues.addAll(m.get(secondTripletKey[in.get()]));
+						results.addAll(uniqueValues);
+					}
+				});
+				mesListes.add(results);
 			}
-			else if(patterns.get(i).getObjectVar().getValue()==null){
-				firstTripletKey[i] = mapCopy.get(patterns.get(i).getPredicateVar().getValue().toString());
-				secondTripletKey[i] = mapCopy.get(patterns.get(i).getObjectVar().getValue().toString());
-				computeQueryResult(patterns, firstTripletKey[i], secondTripletKey[i], results, list1, list2, list3, i, in, spoCopy);
+		}
+		resultatsFinal = calculIntersection(mesListes);
 
-			}
-			else {
-				firstTripletKey[i] = mapCopy.get(patterns.get(i).getPredicateVar().getValue().toString());
-				secondTripletKey[i] = mapCopy.get(patterns.get(i).getObjectVar().getValue().toString());
-				//Calcul temps requete
-				computeQueryResult(patterns, firstTripletKey[i], secondTripletKey[i], results, list1, list2, list3, i, in, posCopy);
+		if (resultatsFinal.size() == 0) {
+			nbderequetesvides++;
+		}
+		exportResultsToCsv(resultatsFinal, "C:/Users/jerem/Documents/HAI914I/RDFEngine/RDFEngine-master/data/resultat_requetes.csv");
+	}
 
 
+	private static ArrayList<Integer> calculIntersection(ArrayList<ArrayList<Integer>> mesListes){
+		ArrayList<Integer> results = new ArrayList<>();
+		Set<Integer> uniqueValues = new HashSet<>();
+		uniqueValues.addAll(mesListes.get(0));
+		results.addAll(uniqueValues);
 
-
+		for(int i = 1 ; i< mesListes.size(); i++) {
+			if (results.size() == 0) {
+				break;
+			} else {
+				List<Integer> list = mesListes.get(i);
+				Set<Integer> result = list.stream()
+						.distinct()
+						.filter(results::contains)
+						.collect(Collectors.toSet());
+				results.clear();
+				results.addAll(result);
 			}
 		}
 
-
-
-		for (Integer yourInt : results)
-		{
-			if (!set1.add(yourInt))
-			{
-				setToReturn.add(yourInt);
-			}
-		}
-		System.out.println("la liste " + setToReturn.size());
-
-		setToReturn.forEach(System.out::println);
-		System.out.println("variables to project : ");
-
-		// Utilisation d'une classe anonyme
-		query.getTupleExpr().visit(new AbstractQueryModelVisitor<RuntimeException>() {
-
-			public void meet(Projection projection) {
-				System.out.println(projection.getProjectionElemList().getElements());
-			}
-		});
+		return results;
 	}
-
-	private static void computeQueryResult(List<StatementPattern> patterns, int firstKey, int secondKey, List<Integer> results, List<Integer> list1, List<Integer> list2, List<Integer> list3, int i, AtomicInteger in, Map<Integer, List<Map<Integer, List<Integer>>>> triplet) {
-		triplet.get(firstKey).forEach(m -> {
-			if (m.get(secondKey) != null) {
-				if (patterns.toArray().length > 1) {
-					if (in.get() == 0) {
-						list1.addAll(m.get(secondKey));
-					} else {
-						if (patterns.toArray().length < 3)
-							results.addAll(m.get(secondKey));
-					}
-				}
-				if (patterns.toArray().length > 2) {
-					if (in.get() == 1) {
-						list2.addAll(m.get(secondKey));
-					} else {
-						if (in.get() != 0 && patterns.toArray().length < 4) {
-
-							results.addAll(m.get(secondKey).stream().distinct().collect(Collectors.toList()));
-						}
-					}
-				}
-				if (patterns.toArray().length > 3) {
-					if (in.get() == 2) {
-						list3.addAll(m.get(secondKey));
-					} else {
-						if (in.get() == 3) {
-							results.addAll(m.get(secondKey).stream().distinct().collect(Collectors.toList()));
-						}
-					}
-				}
-				if (patterns.toArray().length == 1)
-					results.addAll(m.get(secondKey));
-			}
-
-		});
-		if (patterns.toArray().length > 1)
-			if (i == 0) {
-				List<Integer> list = list1.stream().distinct().collect(Collectors.toList());
-
-				results.addAll(list);
-			}
-		if (patterns.toArray().length > 2)
-			if (i == 1) {
-				List<Integer> list = list2.stream().distinct().collect(Collectors.toList());
-				results.addAll(list);
-				final Set<Integer> setToReturn = new HashSet<>();
-				final Set<Integer> set1 = new HashSet<>();
-
-				for (Integer yourInt : results) {
-					if (!set1.add(yourInt)) {
-						setToReturn.add(yourInt);
-					}
-				}
-				results.clear();
-				results.addAll(setToReturn);
-			}
-
-		if (patterns.toArray().length > 3)
-			if (i == 2) {
-				List<Integer> list = list3.stream().distinct().collect(Collectors.toList());
-				results.addAll(list);
-				final Set<Integer> setToReturn = new HashSet<>();
-				final Set<Integer> set1 = new HashSet<>();
-
-				for (Integer yourInt : results) {
-					if (!set1.add(yourInt)) {
-						setToReturn.add(yourInt);
-					}
-				}
-				results.clear();
-				results.addAll(setToReturn);
-				//results.forEach((k) -> System.out.println(k));
-			}
-	}
-
 
 	/**
 	 * Entrée du programme
 	 */
-	public static void export(String fileName) throws Exception {
-		String path = "data/" + fileName + ".csv";
+	public static <T, E> Set<T> getKeysByValue(Map<T, E> map, E value) {
+		return map.entrySet()
+				.stream()
+				.filter(entry -> Objects.equals(entry.getValue(), value))
+				.map(Map.Entry::getKey)
+				.collect(Collectors.toSet());
+	}
+
+
+	public static void exportResultsToCsv(ArrayList<Integer> results,String path){
 
 		FileWriter fw = null;
+		try {
+			fw = new FileWriter(path,true);
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		ArrayList<String> values = new ArrayList<>();
+		results.forEach(k-> {
+					values.add(getKeysByValue(mapCopy,k).toString());
+				}
+		);
+		try {
+			for(String value : values){
+				fw.write(","+value);
+			}
+			fw.write("\n");
+			fw.close();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+	}
 
+	public static void export(String path) throws Exception {
+		FileWriter fw = null;
 		try {
 			fw = new FileWriter(path);
 		} catch (IOException e1) {
@@ -256,23 +234,34 @@ final class Main {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
 	}
 
 
 	public static void main(String[] args) throws Exception {
+		//BasicConfigurator.configure();
 		long startWork = System.currentTimeMillis();
 		long startTime = System.currentTimeMillis();
-		parseData();
+		for(int i = 0;i< args.length;i++){
+			System.out.println(i + " " + args[i]);
+		}
+
+		String path1="C:/Users/jerem/Documents/500k.nt";
+		parseData(args[3]);
+
+
 		long endTime = System.currentTimeMillis();
 		timeToParse = endTime - startTime;
 		startTime = System.currentTimeMillis();
-		parseQueries();
+		String path2 = "C:/Users/jerem/Documents/HAI914I/RDFEngine/RDFEngine-master/data/STAR_ALL_workload.queryset";
+		parseQueries(args[1]);
 		endTime = System.currentTimeMillis();
 		timeToProcessAllQueries = endTime - startTime;
 		long endWork = System.currentTimeMillis();
 		totalTime = endWork - startWork;
-		export("resultat");
+		String path = "C:/Users/jerem/Documents/HAI914I/RDFEngine/RDFEngine-master/data/resultat.csv";
+		export(args[5]);
+		System.out.print("");
+		System.out.println("nb de requetes vides : " + nbderequetesvides);
 	}
 
 	private static String getWorkingDir() {
@@ -283,27 +272,27 @@ final class Main {
 	/**
 	 * Traite chaque requête lue dans {@link #queryFile} avec {@link #processAQuery(ParsedQuery)}.
 	 */
-	private static void parseQueries() throws FileNotFoundException, IOException {
+	private static void parseQueries(String path) throws FileNotFoundException, IOException {
 
 		/**
 		 * Try-with-resources
-		 * 
+		 *
 		 * @see <a href="https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html">Try-with-resources</a>
 		 */
 		/*
 		 * On utilise un stream pour lire les lignes une par une, sans avoir à toutes les stocker
 		 * entièrement dans une collection.
 		 */
-		try (Stream<String> lineStream = Files.lines(Paths.get(queryFile))) {
+		try (Stream<String> lineStream = Files.lines(Paths.get(path))) {
 			SPARQLParser sparqlParser = new SPARQLParser();
 			Iterator<String> lineIterator = lineStream.iterator();
 			StringBuilder queryString = new StringBuilder();
 
 			while (lineIterator.hasNext())
-			/*
-			 * On stocke plusieurs lignes jusqu'à ce que l'une d'entre elles se termine par un '}'
-			 * On considère alors que c'est la fin d'une requête
-			 */
+				/*
+				 * On stocke plusieurs lignes jusqu'à ce que l'une d'entre elles se termine par un '}'
+				 * On considère alors que c'est la fin d'une requête
+				 */
 			{
 				String line = lineIterator.next();
 				queryString.append(line);
@@ -324,16 +313,15 @@ final class Main {
 		}
 	}
 
-	private static void setTimeToProcessAllQueries(long l) {
-	}
+
 
 	/**
 	 * Traite chaque triple lu dans {@link #dataFile} avec {@link MainRDFHandler}.
 	 */
-	private static void parseData() throws FileNotFoundException, IOException {
+	private static void parseData(String path) throws FileNotFoundException, IOException {
 		long startTime = System.currentTimeMillis();
 		MainRDFHandler mainRDFHandler =	new MainRDFHandler();
-		try (Reader dataReader = new FileReader(dataFile)) {
+		try (Reader dataReader = new FileReader(path)) {
 			// On va parser des données au format ntriples
 			RDFParser rdfParser = Rio.createParser(RDFFormat.NTRIPLES);
 			// On utilise notre implémentation de handler
@@ -342,33 +330,15 @@ final class Main {
 			rdfParser.parse(dataReader, baseURI);
 
 		}
-/*
-		mainRDFHandler.map.forEach((k,v)-> {
-		System.out.println("cle " + k + " value " + v);
-		});
-*/
-
-/*
-		mainRDFHandler.pos.forEach((p,listos)->{
-			listos.forEach(((l)->{
-				l.forEach((o,listsub)->{
-					listsub.forEach(s->{
-						System.out.println("POS " +"<" +  p  + "," +o + "," + s+">");
-					});
-						});
-
-			}));
-		});
-*/
-
-mapCopy.putAll(mainRDFHandler.map);
-opsCopy.putAll(mainRDFHandler.ops);
-posCopy.putAll(mainRDFHandler.pos);
-spoCopy.putAll(mainRDFHandler.spo);
-sopCopy.putAll(mainRDFHandler.sop);
-nbTriplets = spoCopy.size();
-nbLignes = mainRDFHandler.nombreLigne;
-timeDico = mainRDFHandler.timeDico;
-timeTriplet = mainRDFHandler.timeTriplet;
+//		System.out.println("dans le dico " + mapCopy.containsKey("http://db.uwaterloo.ca/~galuc/wsdbm/Country135"));
+		mapCopy.putAll(mainRDFHandler.map);
+		opsCopy.putAll(mainRDFHandler.ops);
+		posCopy.putAll(mainRDFHandler.pos);
+		spoCopy.putAll(mainRDFHandler.spo);
+		sopCopy.putAll(mainRDFHandler.sop);
+		nbTriplets = spoCopy.size();
+		nbLignes = mainRDFHandler.nombreLigne;
+		timeDico = mainRDFHandler.timeDico;
+		timeTriplet = mainRDFHandler.timeTriplet;
 	}
 }
