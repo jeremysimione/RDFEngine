@@ -55,11 +55,12 @@ final class Main {
 	 */
 	static final String dataFile = workingDir + "100K.nt";
 
-	static Map<Integer, List<Map<Integer, List<Integer>>>> posCopy = new HashMap<>();
-	static Map<Integer, List<Map<Integer, List<Integer>>>> opsCopy = new HashMap<>();
-	static Map<Integer, List<Map<Integer, List<Integer>>>> spoCopy = new HashMap<>();
-	static Map<Integer, List<Map<Integer, List<Integer>>>> sopCopy = new HashMap<>();
+	static Map<Integer, Map<Integer, List<Integer>>> posCopy = new HashMap<>();
+	static Map<Integer, Map<Integer, List<Integer>>> opsCopy = new HashMap<>();
+	static Map<Integer, Map<Integer, List<Integer>>> spoCopy = new HashMap<>();
+	static Map<Integer, Map<Integer, List<Integer>>> sopCopy = new HashMap<>();
 	static Map<String, Integer> mapCopy = new HashMap<>();
+	static Map<Integer, String> mapCopyInv = new HashMap<>();
 	static int nbrequetes = 0;
 	static long timeToParse = 0;
 	static long timeToProcessAllQueries = 0;
@@ -71,6 +72,7 @@ final class Main {
 	static long totalWorkloadTime = 0;
 	static int nbderequetesvides = 0;
 
+
 	public static String getDataFile() {
 		return dataFile;
 	}
@@ -79,8 +81,8 @@ final class Main {
 		List<StatementPattern> patterns = StatementPatternCollector.process(query.getTupleExpr());
 		int[] firstTripletKey = new int[10];
 		int[] secondTripletKey = new int[10];
-		ArrayList<ArrayList<Integer>> mesListes = new ArrayList<ArrayList<Integer>>();
-		ArrayList<Integer> resultatsFinal = new ArrayList<>();
+		ArrayList<ArrayList<Integer>> mesListes = new ArrayList<>();
+		ArrayList<Integer> resultatsFinal;
 		AtomicInteger in = new AtomicInteger();
 		for (int i = 0; i < patterns.toArray().length; i++) {
 			ArrayList<Integer> results = new ArrayList<>();
@@ -92,13 +94,12 @@ final class Main {
 				if (mapCopy.get(patterns.get(i).getObjectVar().getValue().toString()) != null) {
 					secondTripletKey[i] = mapCopy.get(patterns.get(i).getObjectVar().getValue().toString());
 				}
-				sopCopy.get(firstTripletKey[i]).forEach(m -> {
-					if (m.get(secondTripletKey[in.get()]) != null) {
-						Set<Integer> uniqueValues = new HashSet<>();
-						uniqueValues.addAll(m.get(secondTripletKey[in.get()]));
-						results.addAll(uniqueValues);
-					}
-				});
+
+				if (sopCopy.get(firstTripletKey[i]).get(secondTripletKey[in.get()]) != null) {
+					Set<Integer> uniqueValues = new HashSet<>(sopCopy.get(firstTripletKey[i]).get(secondTripletKey[in.get()]));
+					results.addAll(uniqueValues);
+				}
+
 				mesListes.add(results);
 
 			} else if (patterns.get(i).getObjectVar().getValue() == null) {
@@ -108,13 +109,11 @@ final class Main {
 				if (mapCopy.get(patterns.get(i).getObjectVar().getValue().toString()) != null) {
 					secondTripletKey[i] = mapCopy.get(patterns.get(i).getObjectVar().getValue().toString());
 				}
-				spoCopy.get(firstTripletKey[i]).forEach(m -> {
-					if (m.get(secondTripletKey[in.get()]) != null) {
-						Set<Integer> uniqueValues = new HashSet<>();
-						uniqueValues.addAll(m.get(secondTripletKey[in.get()]));
-						results.addAll(uniqueValues);
-					}
-				});
+
+				if (spoCopy.get(firstTripletKey[i]).get(secondTripletKey[in.get()]) != null) {
+					Set<Integer> uniqueValues = new HashSet<>(spoCopy.get(firstTripletKey[i]).get(secondTripletKey[in.get()]));
+					results.addAll(uniqueValues);
+				}
 				mesListes.add(results);
 			} else {
 				if (mapCopy.get(patterns.get(i).getPredicateVar().getValue().toString()) != null) {
@@ -129,13 +128,10 @@ final class Main {
 					nbderequetesvides++;
 					return;
 				}
-				posCopy.get(firstTripletKey[i]).forEach(m -> {
-					if (m.get(secondTripletKey[in.get()]) != null) {
-						Set<Integer> uniqueValues = new HashSet<>();
-						uniqueValues.addAll(m.get(secondTripletKey[in.get()]));
-						results.addAll(uniqueValues);
-					}
-				});
+				if (posCopy.get(firstTripletKey[i]).get(secondTripletKey[in.get()]) != null) {
+					Set<Integer> uniqueValues = new HashSet<>(posCopy.get(firstTripletKey[i]).get(secondTripletKey[in.get()]));
+					results.addAll(uniqueValues);
+				}
 				mesListes.add(results);
 			}
 		}
@@ -144,7 +140,7 @@ final class Main {
 		if (resultatsFinal.size() == 0) {
 			nbderequetesvides++;
 		}
-		exportResultsToCsv(resultatsFinal, "C:/Users/jerem/Documents/HAI914I/RDFEngine/RDFEngine-master/data/resultat_requetes.csv");
+		exportResultsToCsv(resultatsFinal, "data/resultat_requetes.csv");
 	}
 
 
@@ -193,7 +189,7 @@ final class Main {
 		}
 		ArrayList<String> values = new ArrayList<>();
 		results.forEach(k-> {
-					values.add(getKeysByValue(mapCopy,k).toString());
+					values.add(mapCopyInv.get(k));
 				}
 		);
 		try {
@@ -332,6 +328,7 @@ final class Main {
 		}
 //		System.out.println("dans le dico " + mapCopy.containsKey("http://db.uwaterloo.ca/~galuc/wsdbm/Country135"));
 		mapCopy.putAll(mainRDFHandler.map);
+		mapCopyInv.putAll(mainRDFHandler.mapInv);
 		opsCopy.putAll(mainRDFHandler.ops);
 		posCopy.putAll(mainRDFHandler.pos);
 		spoCopy.putAll(mainRDFHandler.spo);

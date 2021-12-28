@@ -1,2 +1,2 @@
 nom_fichier,nom_dossier_requetes,nb_triplets,nb_requetes,temps_lecture_data,temps_lecture_req,temps_creation_dico,nb_index,temps_creation_index,temps_exec_worload,temps_total
-data/100K.nt,data/,107338,1200,6438,2055,54,5598,5177,1684,8493
+data/100K.nt,data/,107338,1200,6365,1764,45,5598,5166,1378,8129
