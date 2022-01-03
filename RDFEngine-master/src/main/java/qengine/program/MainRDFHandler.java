@@ -42,28 +42,18 @@ public final class MainRDFHandler extends AbstractRDFHandler {
 		if (!map.containsKey(st.getSubject().stringValue())) {
 			num++;
 			map.put(st.getSubject().stringValue(), num);
+			mapInv.put( num,st.getSubject().stringValue());
+
 		}
 		if (!map.containsKey(st.getPredicate().stringValue())) {
 			num++;
 			map.put(st.getPredicate().stringValue(), num);
+			mapInv.put( num,st.getPredicate().stringValue());
 		}
 		if (!map.containsKey(st.getObject().stringValue())) {
 			num++;
 			map.put(st.getObject().stringValue(), num);
-		}
-
-		//map inverse
-		if (mapInv.get(st.getSubject().stringValue()) == null) {
-			numInv++;
-			mapInv.put(num,st.getSubject().stringValue());
-		}
-		if (mapInv.get(st.getPredicate().stringValue()) == null) {
-			numInv++;
-			mapInv.put( num,st.getPredicate().stringValue());
-		}
-		if (mapInv.get(st.getObject().stringValue()) == null) {
-			numInv++;
-			mapInv.put( num,st.getObject().stringValue());
+			mapInv.put(num,st.getObject().stringValue());
 		}
 
 
@@ -255,7 +245,6 @@ public final class MainRDFHandler extends AbstractRDFHandler {
 		}
 		long endTimeTriplet = System.currentTimeMillis();
 		timeTriplet += endTimeTriplet - startTimeTriplet;
-
 
 
 

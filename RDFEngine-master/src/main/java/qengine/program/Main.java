@@ -4,16 +4,10 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicIntegerArray;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.opencsv.CSVReader;
-import org.eclipse.rdf4j.query.algebra.Projection;
 import org.eclipse.rdf4j.query.algebra.StatementPattern;
-import org.eclipse.rdf4j.query.algebra.helpers.AbstractQueryModelVisitor;
 import org.eclipse.rdf4j.query.algebra.helpers.StatementPatternCollector;
 import org.eclipse.rdf4j.query.parser.ParsedQuery;
 import org.eclipse.rdf4j.query.parser.sparql.SPARQLParser;
@@ -21,22 +15,6 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParser;
 import org.eclipse.rdf4j.rio.Rio;
 
-/**
- * Programme simple lisant un fichier de requête et un fichier de données.
- *
- * <p>
- * Les entrées sont données ici de manière statique,
- * à vous de programmer les entrées par passage d'arguments en ligne de commande comme demandé dans l'énoncé.
- * </p>
- *
- * <p>
- * Le présent programme se contente de vous montrer la voie pour lire les triples et requêtes
- * depuis les fichiers ; ce sera à vous d'adapter/réécrire le code pour finalement utiliser les requêtes et interroger les données.
- * On ne s'attend pas forcémment à ce que vous gardiez la même structure de code, vous pouvez tout réécrire.
- * </p>
- *
- * @author Olivier Rodriguez <olivier.rodriguez1@umontpellier.fr>
- */
 final class Main {
 	static final String baseURI = null;
 	static List<String> data = new ArrayList<String>();
@@ -71,13 +49,22 @@ final class Main {
 	static int nbLignes = 0;
 	static long totalWorkloadTime = 0;
 	static int nbderequetesvides = 0;
-
+	static int nbdeDoublons = 0;
+	static ArrayList<String> queries = new ArrayList<>();
 
 	public static String getDataFile() {
 		return dataFile;
 	}
 
-	public static void processAQuery(ParsedQuery query) throws IOException {
+	public static void processAQuery(ParsedQuery query,String csvPath) {
+
+
+		if(queries.contains(query.toString())) {
+			nbdeDoublons++;
+		}
+		queries.add(query.toString());
+
+
 		List<StatementPattern> patterns = StatementPatternCollector.process(query.getTupleExpr());
 		int[] firstTripletKey = new int[10];
 		int[] secondTripletKey = new int[10];
@@ -135,47 +122,17 @@ final class Main {
 				mesListes.add(results);
 			}
 		}
-		resultatsFinal = calculIntersection(mesListes);
 
+		resultatsFinal = mesListes.get(0);
+		if(mesListes.size()>0) {
+			for (int i = 1; i < mesListes.size(); i++) {
+				resultatsFinal.retainAll(mesListes.get(i));
+			}
+		}
 		if (resultatsFinal.size() == 0) {
 			nbderequetesvides++;
 		}
-		exportResultsToCsv(resultatsFinal, "data/resultat_requetes.csv");
-	}
-
-
-	private static ArrayList<Integer> calculIntersection(ArrayList<ArrayList<Integer>> mesListes){
-		ArrayList<Integer> results = new ArrayList<>();
-		Set<Integer> uniqueValues = new HashSet<>();
-		uniqueValues.addAll(mesListes.get(0));
-		results.addAll(uniqueValues);
-
-		for(int i = 1 ; i< mesListes.size(); i++) {
-			if (results.size() == 0) {
-				break;
-			} else {
-				List<Integer> list = mesListes.get(i);
-				Set<Integer> result = list.stream()
-						.distinct()
-						.filter(results::contains)
-						.collect(Collectors.toSet());
-				results.clear();
-				results.addAll(result);
-			}
-		}
-
-		return results;
-	}
-
-	/**
-	 * Entrée du programme
-	 */
-	public static <T, E> Set<T> getKeysByValue(Map<T, E> map, E value) {
-		return map.entrySet()
-				.stream()
-				.filter(entry -> Objects.equals(entry.getValue(), value))
-				.map(Map.Entry::getKey)
-				.collect(Collectors.toSet());
+	exportResultsToCsv(resultatsFinal, csvPath.substring(0,csvPath.length()-4) +"_requetes.csv");
 	}
 
 
@@ -193,8 +150,11 @@ final class Main {
 				}
 		);
 		try {
+			if(values.size()==0){
+				fw.write("aucune solution");
+			}
 			for(String value : values){
-				fw.write(","+value);
+				fw.write(value +",");
 			}
 			fw.write("\n");
 			fw.close();
@@ -234,30 +194,34 @@ final class Main {
 
 
 	public static void main(String[] args) throws Exception {
-		//BasicConfigurator.configure();
+
 		long startWork = System.currentTimeMillis();
 		long startTime = System.currentTimeMillis();
 		for(int i = 0;i< args.length;i++){
 			System.out.println(i + " " + args[i]);
 		}
 
-		String path1="C:/Users/jerem/Documents/500k.nt";
+		//String path1=workingDir + "/100K.nt";
 		parseData(args[3]);
-
+		//parseData(path1);
 
 		long endTime = System.currentTimeMillis();
 		timeToParse = endTime - startTime;
 		startTime = System.currentTimeMillis();
-		String path2 = "C:/Users/jerem/Documents/HAI914I/RDFEngine/RDFEngine-master/data/STAR_ALL_workload.queryset";
-		parseQueries(args[1]);
+		//String path2 = workingDir +"/STAR_ALL_workload.queryset";
+		parseQueries(args[1],args[5]);
+		//parseQueries(path2);
+
 		endTime = System.currentTimeMillis();
 		timeToProcessAllQueries = endTime - startTime;
 		long endWork = System.currentTimeMillis();
 		totalTime = endWork - startWork;
-		String path = "C:/Users/jerem/Documents/HAI914I/RDFEngine/RDFEngine-master/data/resultat.csv";
+		//String path = workingDir + "/resultat.csv";
 		export(args[5]);
+		//export(path);
 		System.out.print("");
 		System.out.println("nb de requetes vides : " + nbderequetesvides);
+		System.out.println("nb de requetes doublons : " + nbdeDoublons);
 	}
 
 	private static String getWorkingDir() {
@@ -266,9 +230,9 @@ final class Main {
 
 
 	/**
-	 * Traite chaque requête lue dans {@link #queryFile} avec {@link #processAQuery(ParsedQuery)}.
+	 * Traite chaque requête lue dans {@link #queryFile} avec {@link #processAQuery(ParsedQuery,String)}.
 	 */
-	private static void parseQueries(String path) throws FileNotFoundException, IOException {
+	static void parseQueries(String path,String csvPath) throws FileNotFoundException, IOException {
 
 		/**
 		 * Try-with-resources
@@ -298,7 +262,7 @@ final class Main {
 					//temps d'evaluation d'une requete
 					long start = System.currentTimeMillis();
 					long stratTime = System.currentTimeMillis();
-					processAQuery(query); // Traitement de la requête, à adapter/réécrire pour votre programme
+					processAQuery(query,csvPath); // Traitement de la requête, à adapter/réécrire pour votre programme
 					long endTime = System.currentTimeMillis();
 					long timeTaken = (endTime-start);
 					totalWorkloadTime += timeTaken;
