@@ -1,2 +1,2 @@
 nom_fichier,nom_dossier_requetes,nb_triplets,nb_requetes,temps_lecture_data,temps_lecture_req,temps_creation_dico,nb_index,temps_creation_index,temps_exec_worload,temps_total
-data/100K.nt,data/,107338,1200,1510,832,44,5598,379,495,2342
+C:/Users/jerem/Documents/2M.nt,C:/Users/jerem/Documents/HAI914I/RDFEngine/RDFEngine-master/data/STAR_ALL_workload.queryset,2153632,1200,16919,3239,1137,104625,6674,2608,20158

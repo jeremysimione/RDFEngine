@@ -67,26 +67,16 @@ public final class MainRDFHandler extends AbstractRDFHandler {
 			sop.put(map.get(st.getSubject().stringValue()), op);
 
 		}
-		AtomicBoolean objectsop = new AtomicBoolean(false);
-		if (sop.get(map.get(st.getSubject().stringValue())).size() > 0) {
+
 			if(!sop.get(map.get(st.getSubject().stringValue())).containsKey(map.get(st.getObject().stringValue()))){
 				sop.get(map.get(st.getSubject().stringValue())).put(map.get(st.getObject().stringValue()), new ArrayList<>());
 			}
+
 			sop.get(map.get(st.getSubject().stringValue()))
 					.get(map.get(st.getObject().stringValue()))
 					.add(map.get(st.getPredicate().stringValue()));
-			objectsop.set(true);
 
 
-		}
-		if (!objectsop.get()) {
-
-			Map<Integer, List<Integer>> op = new HashMap<>();
-			List<Integer> list = new ArrayList<>();
-			list.add(map.get(st.getPredicate().stringValue()));
-			op.put(map.get(st.getObject().stringValue()), list);
-			sop.put(map.get(st.getSubject().stringValue()),op);
-		}
 
 
 		if (!spo.containsKey(map.get(st.getSubject().stringValue()))) {
@@ -94,26 +84,13 @@ public final class MainRDFHandler extends AbstractRDFHandler {
 			Map<Integer, List<Integer>> po = new HashMap<>();
 			spo.put(map.get(st.getSubject().stringValue()), po);
 		}
-		AtomicBoolean objectspo = new AtomicBoolean(false);
-		if (spo.get(map.get(st.getSubject().stringValue())).size() > 0) {
+
 			if(!spo.get(map.get(st.getSubject().stringValue())).containsKey(map.get(st.getPredicate().stringValue()))){
 				spo.get(map.get(st.getSubject().stringValue())).put(map.get(st.getPredicate().stringValue()), new ArrayList<>());
 			}
 			spo.get(map.get(st.getSubject().stringValue()))
 					.get(map.get(st.getPredicate().stringValue()))
 					.add(map.get(st.getObject().stringValue()));
-			objectspo.set(true);
-
-
-		}
-		if (!objectspo.get()) {
-			HashMap<Integer, List<Integer>> po = new HashMap<>();
-			List<Integer> list = new ArrayList<>();
-			list.add(map.get(st.getObject().stringValue()));
-			po.put(map.get(st.getPredicate().stringValue()), list);
-			spo.put(map.get(st.getSubject().stringValue()),po);
-		}
-
 
 
 //PSO
@@ -123,30 +100,13 @@ public final class MainRDFHandler extends AbstractRDFHandler {
 			pso.put(map.get(st.getPredicate().stringValue()), so);
 
 		}
-		AtomicBoolean boolpso = new AtomicBoolean(false);
-		if (pso.get(map.get(st.getPredicate().stringValue())).size() > 0) {
+
 			if(!pso.get(map.get(st.getPredicate().stringValue())).containsKey(map.get(st.getSubject().stringValue()))){
 				pso.get(map.get(st.getPredicate().stringValue())).put(map.get(st.getSubject().stringValue()), new ArrayList<>());
 			}
 			pso.get(map.get(st.getPredicate().stringValue()))
 					.get(map.get(st.getSubject().stringValue()))
 					.add(map.get(st.getObject().stringValue()));
-
-			boolpso.set(true);
-
-		}
-
-
-		if (!boolpso.get())
-		{
-			HashMap<Integer,List<Integer>> so = new HashMap<>();
-			List<Integer> list = new ArrayList<>();
-			list.add(map.get(st.getObject().stringValue()));
-			so.put(map.get(st.getSubject().stringValue()),list);
-			pso.put(map.get(st.getPredicate().stringValue()),so);
-
-		}
-
 
 
 
@@ -157,8 +117,6 @@ public final class MainRDFHandler extends AbstractRDFHandler {
 			pos.put(map.get(st.getPredicate().stringValue()), os);
 
 		}
-		AtomicBoolean boolpos = new AtomicBoolean(false);
-		if (pos.get(map.get(st.getPredicate().stringValue())).size() > 0) {
 
 			if(!pos.get(map.get(st.getPredicate().stringValue())).containsKey(map.get(st.getObject().stringValue()))){
 				pos.get(map.get(st.getPredicate().stringValue())).put(map.get(st.getObject().stringValue()), new ArrayList<>());
@@ -166,19 +124,6 @@ public final class MainRDFHandler extends AbstractRDFHandler {
 			pos.get(map.get(st.getPredicate().stringValue()))
 					.get(map.get(st.getObject().stringValue()))
 					.add(map.get(st.getSubject().stringValue()));
-			boolpos.set(true);
-
-		}
-		if (!boolpos.get())
-		{
-			HashMap<Integer,List<Integer>> os = new HashMap<>();
-			List<Integer> list = new ArrayList<>();
-			list.add(map.get(st.getSubject().stringValue()));
-			os.put(map.get(st.getObject().stringValue()),list);
-			pos.put(map.get(st.getPredicate().stringValue()),os);
-
-		}
-
 
 
 
@@ -189,8 +134,7 @@ public final class MainRDFHandler extends AbstractRDFHandler {
 			Map<Integer, List<Integer>> sp = new HashMap<>();
 			osp.put(map.get(st.getObject().stringValue()), sp);
 		}
-		AtomicBoolean boolosp = new AtomicBoolean(false);
-		if (osp.get(map.get(st.getObject().stringValue())).size() > 0) {
+
 			if(!osp.get(map.get(st.getObject().stringValue())).containsKey(map.get(st.getSubject().stringValue()))){
 				osp.get(map.get(st.getObject().stringValue())).put(map.get(st.getSubject().stringValue()), new ArrayList<>());
 			}
@@ -198,18 +142,6 @@ public final class MainRDFHandler extends AbstractRDFHandler {
 					.get(map.get(st.getSubject().stringValue()))
 					.add(map.get(st.getPredicate().stringValue()));
 
-			boolosp.set(true);
-
-
-		}
-		if (!boolosp.get()){
-			HashMap<Integer,List<Integer>> sp = new HashMap<>();
-			List<Integer> list =new ArrayList<>();
-			list.add(map.get(st.getPredicate().stringValue()));
-			sp.put(map.get(st.getSubject().stringValue()),list);
-			osp.put(map.get(st.getObject().stringValue()),sp);
-
-		}
 
 
 
@@ -221,28 +153,13 @@ public final class MainRDFHandler extends AbstractRDFHandler {
 		}
 
 
-		AtomicBoolean boolops = new AtomicBoolean(false);
-		if (ops.get(map.get(st.getObject().stringValue())).size() > 0) {
-
 			if(!ops.get(map.get(st.getObject().stringValue())).containsKey(map.get(st.getPredicate().stringValue()))){
 				ops.get(map.get(st.getObject().stringValue())).put(map.get(st.getPredicate().stringValue()), new ArrayList<>());
 			}
 			ops.get(map.get(st.getObject().stringValue()))
 					.get(map.get(st.getPredicate().stringValue()))
 					.add(map.get(st.getSubject().stringValue()));
-			boolops.set(true);
 
-		}
-		if (!boolops.get())
-		{
-			HashMap<Integer,List<Integer>> ps = new HashMap<>();
-			List<Integer> list = new ArrayList<>();
-			list.add(map.get(st.getSubject().stringValue()));
-
-			ps.put(map.get(st.getPredicate().stringValue()),list);
-			ops.put(map.get(st.getObject().stringValue()),ps);
-
-		}
 		long endTimeTriplet = System.currentTimeMillis();
 		timeTriplet += endTimeTriplet - startTimeTriplet;
 

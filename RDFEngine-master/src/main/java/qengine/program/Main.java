@@ -52,18 +52,18 @@ final class Main {
 	static int nbdeDoublons = 0;
 	static ArrayList<String> queries = new ArrayList<>();
 
-	public static String getDataFile() {
-		return dataFile;
-	}
+
 
 	public static void processAQuery(ParsedQuery query,String csvPath) {
-
+	boolean doublon=false;
 
 		if(queries.contains(query.toString())) {
 			nbdeDoublons++;
+			doublon=true;
 		}
 		queries.add(query.toString());
-
+//Si on veut optimiser le temps d'execution
+//		if(doublon) return;
 
 		List<StatementPattern> patterns = StatementPatternCollector.process(query.getTupleExpr());
 		int[] firstTripletKey = new int[10];
@@ -132,7 +132,7 @@ final class Main {
 		if (resultatsFinal.size() == 0) {
 			nbderequetesvides++;
 		}
-	exportResultsToCsv(resultatsFinal, csvPath.substring(0,csvPath.length()-4) +"_requetes.csv");
+		exportResultsToCsv(resultatsFinal, csvPath.substring(0,csvPath.length()-4) +"_requetes.csv");
 	}
 
 
@@ -163,7 +163,7 @@ final class Main {
 		}
 	}
 
-	public static void export(String path) throws Exception {
+	public static void export(String path,String filename,String queryFile) throws Exception {
 		FileWriter fw = null;
 		try {
 			fw = new FileWriter(path);
@@ -184,7 +184,7 @@ final class Main {
 			fw.write("temps_creation_index,");
 			fw.write("temps_exec_worload,");
 			fw.write("temps_total\n");
-			fw.write(getDataFile() + "," + getWorkingDir() + "," + nbLignes  + "," + nbrequetes + "," + timeToParse +"," + timeToProcessAllQueries
+			fw.write(filename + "," + queryFile + "," + nbLignes  + "," + nbrequetes + "," + timeToParse +"," + timeToProcessAllQueries
 					+ "," + timeDico + "," + nbTriplets + "," + timeTriplet + ","  + totalWorkloadTime +"," +totalTime );
 			fw.close();
 		} catch (IOException e) {
@@ -202,14 +202,15 @@ final class Main {
 		}
 
 		//String path1=workingDir + "/100K.nt";
-		parseData(args[3]);
+		String filename = args[3];
+		parseData(filename);
 		//parseData(path1);
 
 		long endTime = System.currentTimeMillis();
 		timeToParse = endTime - startTime;
 		startTime = System.currentTimeMillis();
-		//String path2 = workingDir +"/STAR_ALL_workload.queryset";
-		parseQueries(args[1],args[5]);
+		String path2 = args[1];
+		parseQueries(path2,args[5]);
 		//parseQueries(path2);
 
 		endTime = System.currentTimeMillis();
@@ -217,16 +218,13 @@ final class Main {
 		long endWork = System.currentTimeMillis();
 		totalTime = endWork - startWork;
 		//String path = workingDir + "/resultat.csv";
-		export(args[5]);
+		export(args[5],filename,path2);
 		//export(path);
 		System.out.print("");
 		System.out.println("nb de requetes vides : " + nbderequetesvides);
 		System.out.println("nb de requetes doublons : " + nbdeDoublons);
 	}
 
-	private static String getWorkingDir() {
-		return workingDir;
-	}
 
 
 	/**

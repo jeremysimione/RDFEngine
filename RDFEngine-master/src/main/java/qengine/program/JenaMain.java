@@ -27,7 +27,7 @@ final class JenaMain {
     /**
      * Fichier contenant des données rdf
      */
-    static final String dataFile = workingDir + "100K.nt";
+    static final String dataFile = "C:/Users/jerem/Documents/2M.nt";
 
     static int nbrequetes = 0;
     static long timeToParse = 0;
@@ -63,7 +63,7 @@ final class JenaMain {
                 execution.close();
             }
             resultatsFinal.add(st.toString());
-            exportResultsToCsv(resultatsFinal,workingDir +"/resultat_requetes_jena.csv");
+       //     exportResultsToCsv(resultatsFinal,workingDir +"/resultat_requetes_jena.csv");
 
 
     }
@@ -130,7 +130,8 @@ final class JenaMain {
         long endTime = System.currentTimeMillis();
         timeToParse = endTime - startTime;
         startTime = System.currentTimeMillis();
-        String path2 = workingDir +"/STAR_ALL_workload.queryset";
+
+        String path2 = workingDir +"/Q_1_mixed_4000.queryset";
         parseQueries(path2,model);
         endTime = System.currentTimeMillis();
         timeToProcessAllQueries = endTime - startTime;
